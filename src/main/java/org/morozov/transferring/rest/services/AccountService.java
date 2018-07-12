@@ -116,14 +116,13 @@ public class AccountService {
             );
         }
 
-        Account account = operationService.loadAccountByNumber(request.getNumber());
-        if (account != null) {
-            logger.warn(String.format(ErrorDescriptions.ACCOUNT_ALREADY_EXISTS_PARAM, request.getNumber()));
+        try {
+            operationService.createAccount(user, request.getNumber(), request.getAmount());
+        } catch (IllegalArgumentException ex) {
             return ResponseFactory.produceBadResponse(
-                    Response.Status.BAD_REQUEST.getStatusCode(), ErrorDescriptions.ACCOUNT_ALREADY_EXISTS
+                    Response.Status.BAD_REQUEST.getStatusCode(), ex.getMessage()
             );
         }
-        operationService.createAccount(user, request.getNumber(), request.getAmount());
         return ResponseFactory.produceOkResponse();
     }
 

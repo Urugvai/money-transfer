@@ -17,11 +17,17 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 public class OperationServiceImpl implements OperationService {
 
     private static final Logger logger = LogManager.getLogger(OperationServiceImpl.class);
+
+    private static final Lock processLock = new ReentrantLock();
+    private static final Lock userLock = new ReentrantLock();
+    private static final Lock accountLock = new ReentrantLock();
 
     /**
      * Better to use CDI. {@see UserService}
@@ -30,9 +36,21 @@ public class OperationServiceImpl implements OperationService {
 
     @Override
     public void createUser(@NotNull String login) {
-        User user = new User();
-        user.setLogin(login);
-        dataDao.persistUser(user);
+        userLock.lock();
+        try {
+            User user = dataDao.loadUserByLogin(login);
+
+            if (user != null) {
+                logger.error(String.format("User with requested login '%s' already exists in system", login));
+                throw new IllegalArgumentException("User with requested login already exists in system");
+            }
+
+            user = new User();
+            user.setLogin(login);
+            dataDao.persistUser(user);
+        } finally {
+            userLock.unlock();
+        }
     }
 
     @Nullable
@@ -49,11 +67,22 @@ public class OperationServiceImpl implements OperationService {
 
     @Override
     public void createAccount(@NotNull User user, @NotNull String number, @NotNull BigDecimal amount) {
-        Account account = new Account();
-        account.setNumber(number);
-        account.setAmount(amount);
-        account.setAccountHolder(user);
-        dataDao.persistAccount(account);
+        accountLock.lock();
+        try {
+            Account account = dataDao.loadAccountByNumber(number);
+            if (account != null) {
+                logger.error(String.format("Account with requested number '%s' already exists in system", number));
+                throw new IllegalArgumentException("Account with requested number already exists in system");
+            }
+
+            account = new Account();
+            account.setNumber(number);
+            account.setAmount(amount);
+            account.setAccountHolder(user);
+            dataDao.persistAccount(account);
+        } finally {
+            accountLock.unlock();
+        }
     }
 
     @Nullable
@@ -81,13 +110,14 @@ public class OperationServiceImpl implements OperationService {
           so before locking need to sort locking accounts (e.g. by number)
           to guarantee the same blocking order in different threads.
          */
-        synchronized (OperationServiceImpl.class) {
+        processLock.lock();
+        try {
             EntityManager em = PersistenceProvider.getEntityManager();
 
             Account reloadedFromAccount = em.find(Account.class, fromAccount.getId());
             if (reloadedFromAccount == null) {
-                logger.error(String.format("Can't load from account '%s'", fromAccount.getNumber()));
-                throw new IllegalStateException("Can't load from account");
+                logger.error(String.format("Can't load fromAccount '%s'", fromAccount.getNumber()));
+                throw new IllegalStateException("Can't load fromAccount");
             }
 
             if (reloadedFromAccount.getAmount().compareTo(amount) < 0) {
@@ -102,8 +132,8 @@ public class OperationServiceImpl implements OperationService {
 
             Account reloadedToAccount = em.find(Account.class, toAccount.getId());
             if (reloadedToAccount == null) {
-                logger.error(String.format("Can't load to account '%s'", toAccount.getNumber()));
-                throw new IllegalStateException("Can't load to account");
+                logger.error(String.format("Can't load toAccount '%s'", toAccount.getNumber()));
+                throw new IllegalStateException("Can't load toAccount");
             }
             reloadedFromAccount.setAmount(reloadedFromAccount.getAmount().subtract(amount));
             reloadedToAccount.setAmount(reloadedToAccount.getAmount().add(amount));
@@ -113,6 +143,8 @@ public class OperationServiceImpl implements OperationService {
             record.setAmount(amount);
             record.setTransactionDate(new Date());
             dataDao.commitProcessChanges(reloadedFromAccount, reloadedToAccount, record);
+        } finally {
+            processLock.unlock();
         }
     }
 

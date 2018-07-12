@@ -5,9 +5,6 @@ public interface ErrorDescriptions {
     String USER_NOT_FOUND = "User with requested login is not found";
     String USER_NOT_FOUND_PARAM = "User with requested login '%s' is not found";
 
-    String USER_ALREADY_EXISTS = "User with requested login already exists in system";
-    String USER_ALREADY_EXISTS_PARAM = "User with requested login '%s' already exists in system";
-
     String ACCOUNT_NOT_FOUND = "Account with requested number is not found";
     String ACCOUNT_NOT_FOUND_PARAM = "Account with requested number '%s' is not found";
     String FROM_ACCOUNT_NOT_FOUND = "From account with requested number is not found";
@@ -20,9 +17,6 @@ public interface ErrorDescriptions {
             "Invalid requested data: user login - '%s', number - '%s', amount - '%s'";
     String PROCESS_REQUEST_INVALID_DATA_PARAM =
             "Invalid requested data: from account - '%s', to account - '%s', amount - '%s'";
-
-    String ACCOUNT_ALREADY_EXISTS = "Account with requested number already exists in system";
-    String ACCOUNT_ALREADY_EXISTS_PARAM = "Account with requested number '%s' already exists in system";
 
     String SAME_ACCOUNT = "Attempt to transfer amount from account to the same account is forbidden";
     String SAME_ACCOUNT_PARAM = "Attempt to transfer amount from account '%s' to the same account is forbidden";

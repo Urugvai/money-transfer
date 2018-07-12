@@ -100,14 +100,13 @@ public class UserService {
     @Path("/{login}")
     @Produces(MediaType.APPLICATION_JSON)
     public BaseResponse create(@PathParam("login") String login) {
-        User user = operationService.loadUserByLogin(login);
-        if (user != null) {
-            logger.warn(String.format(ErrorDescriptions.USER_ALREADY_EXISTS_PARAM, login));
+        try {
+            operationService.createUser(login);
+        } catch (IllegalArgumentException ex) {
             return ResponseFactory.produceBadResponse(
-                    Response.Status.BAD_REQUEST.getStatusCode(), ErrorDescriptions.USER_ALREADY_EXISTS
+                    Response.Status.BAD_REQUEST.getStatusCode(), ex.getMessage()
             );
         }
-        operationService.createUser(login);
         return ResponseFactory.produceOkResponse();
     }
 }
