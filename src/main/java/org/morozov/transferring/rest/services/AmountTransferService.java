@@ -61,16 +61,6 @@ public class AmountTransferService {
                     Response.Status.BAD_REQUEST.getStatusCode(), ErrorDescriptions.FROM_ACCOUNT_NOT_FOUND
             );
         }
-        if (fromAccount.getAmount().compareTo(request.getAmount()) < 0) {
-            logger.warn(
-                    String.format(
-                            ErrorDescriptions.NOT_ENOUGH_AMOUNT_PARAM, fromAccount.getAmount(), request.getAmount()
-                    )
-            );
-            return ResponseFactory.produceBadResponse(
-                    Response.Status.BAD_REQUEST.getStatusCode(), ErrorDescriptions.NOT_ENOUGH_AMOUNT
-            );
-        }
 
         Account toAccount = operationService.loadAccountByNumber(request.getToAccount());
         if (toAccount == null) {
@@ -80,7 +70,13 @@ public class AmountTransferService {
             );
         }
 
-        operationService.processAmountTransfer(fromAccount, toAccount, request.getAmount());
+        try {
+            operationService.processAmountTransfer(fromAccount, toAccount, request.getAmount());
+        } catch (Throwable throwable) {
+            return ResponseFactory.produceBadResponse(
+                    Response.Status.BAD_REQUEST.getStatusCode(), throwable.getMessage()
+            );
+        }
         return ResponseFactory.produceOkResponse();
     }
 

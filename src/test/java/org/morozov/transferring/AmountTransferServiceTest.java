@@ -88,7 +88,7 @@ public class AmountTransferServiceTest extends BaseTest {
         request = MockHttpRequest.put(BASE_TRANSFER_PATH);
         request.accept(MediaType.APPLICATION_JSON);
         request.contentType(MediaType.APPLICATION_JSON_TYPE);
-        request.content(produceCreatingBody(EXISTED_ACCOUNT_NUMBER, ABSENT_ACCOUNT_NUMBER, BigDecimal.valueOf(200)).getBytes());
+        request.content(produceCreatingBody(EXISTED_ACCOUNT_NUMBER, EXISTED_SECOND_ACCOUNT_NUMBER, BigDecimal.valueOf(200)).getBytes());
 
         response =
                 invoke(request, new MockHttpResponse());

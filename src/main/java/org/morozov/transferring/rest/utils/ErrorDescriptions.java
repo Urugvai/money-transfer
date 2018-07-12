@@ -27,10 +27,6 @@ public interface ErrorDescriptions {
     String SAME_ACCOUNT = "Attempt to transfer amount from account to the same account is forbidden";
     String SAME_ACCOUNT_PARAM = "Attempt to transfer amount from account '%s' to the same account is forbidden";
 
-    String NOT_ENOUGH_AMOUNT = "Not enough amount of account to process operation";
-    String NOT_ENOUGH_AMOUNT_PARAM =
-            "Not enough amount of account to process operation. Account amount: '%s'. Required: '%s'";
-
     String ACCOUNTS_BY_USER_NOT_FOUND = "Accounts for user with requested login are not found";
     String ACCOUNTS_BY_USER_NOT_FOUND_PARAM = "Accounts for user with requested login '%s' are not found";
 }
