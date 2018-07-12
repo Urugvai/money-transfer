@@ -72,9 +72,9 @@ public class AmountTransferService {
 
         try {
             operationService.processAmountTransfer(fromAccount, toAccount, request.getAmount());
-        } catch (Throwable throwable) {
+        } catch (IllegalStateException ex) {
             return ResponseFactory.produceBadResponse(
-                    Response.Status.BAD_REQUEST.getStatusCode(), throwable.getMessage()
+                    Response.Status.BAD_REQUEST.getStatusCode(), ex.getMessage()
             );
         }
         return ResponseFactory.produceOkResponse();
