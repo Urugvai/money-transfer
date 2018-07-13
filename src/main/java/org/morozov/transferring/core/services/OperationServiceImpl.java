@@ -38,6 +38,7 @@ public class OperationServiceImpl implements OperationService {
     public void createUser(@NotNull String login) {
         userLock.lock();
         try {
+            logger.info(String.format("User lock from creating user '%s'", login));
             User user = dataDao.loadUserByLogin(login);
 
             if (user != null) {
@@ -49,6 +50,7 @@ public class OperationServiceImpl implements OperationService {
             user.setLogin(login);
             dataDao.persistUser(user);
         } finally {
+            logger.info(String.format("User unlock from creating user '%s'", login));
             userLock.unlock();
         }
     }
@@ -69,6 +71,7 @@ public class OperationServiceImpl implements OperationService {
     public void createAccount(@NotNull User user, @NotNull String number, @NotNull BigDecimal amount) {
         accountLock.lock();
         try {
+            logger.info(String.format("Account lock from creating account '%s'", number));
             Account account = dataDao.loadAccountByNumber(number);
             if (account != null) {
                 logger.error(String.format("Account with requested number '%s' already exists in system", number));
@@ -81,6 +84,7 @@ public class OperationServiceImpl implements OperationService {
             account.setAccountHolder(user);
             dataDao.persistAccount(account);
         } finally {
+            logger.info(String.format("Account unlock from creating account '%s'", number));
             accountLock.unlock();
         }
     }
@@ -112,6 +116,10 @@ public class OperationServiceImpl implements OperationService {
          */
         processLock.lock();
         try {
+            logger.info(
+                    String.format("Process lock from account '%s' to account '%s' amount '%s'",
+                            fromAccount.getNumber(), toAccount.getNumber(), amount)
+            );
             EntityManager em = PersistenceProvider.getEntityManager();
 
             Account reloadedFromAccount = em.find(Account.class, fromAccount.getId());
@@ -144,6 +152,10 @@ public class OperationServiceImpl implements OperationService {
             record.setTransactionDate(new Date());
             dataDao.commitProcessChanges(reloadedFromAccount, reloadedToAccount, record);
         } finally {
+            logger.info(
+                    String.format("Process unlock from account '%s' to account '%s' amount '%s'",
+                            fromAccount.getNumber(), toAccount.getNumber(), amount)
+            );
             processLock.unlock();
         }
     }

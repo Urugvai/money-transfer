@@ -16,6 +16,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.math.BigDecimal;
 import java.net.URISyntaxException;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.*;
 
 public class AmountTransferServiceTest extends BaseTest {
 
@@ -129,6 +132,44 @@ public class AmountTransferServiceTest extends BaseTest {
         Assert.assertEquals(0, BigDecimal.valueOf(110).compareTo(account.getAmount()));
     }
 
+    @Test
+    public void loadTest() throws InterruptedException {
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+
+        List<Future<MockHttpResponse>> futures = executor.invokeAll(
+                Arrays.asList(
+                        produceProcessThread(BigDecimal.ONE),
+                        produceProcessThread(BigDecimal.valueOf(5)),
+                        produceProcessThread(BigDecimal.TEN),
+                        produceProcessThread(BigDecimal.valueOf(50))
+                )
+        );
+
+        futures.forEach(future -> {
+            MockHttpResponse response;
+            try {
+                response = future.get();
+
+                Assert.assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+                Assert.assertEquals(EXPECTED_OK_RESPONSE, response.getContentAsString());
+            } catch (InterruptedException | ExecutionException e) {
+                e.printStackTrace();
+            }
+        });
+
+        executor.shutdown();
+
+        Account account = loadAccountByLogin(EXISTED_ACCOUNT_NUMBER);
+        Assert.assertNotNull(account);
+        Assert.assertEquals(EXISTED_ACCOUNT_NUMBER, account.getNumber());
+        Assert.assertEquals(0, BigDecimal.valueOf(34).compareTo(account.getAmount()));
+
+        account = loadAccountByLogin(EXISTED_SECOND_ACCOUNT_NUMBER);
+        Assert.assertNotNull(account);
+        Assert.assertEquals(EXISTED_SECOND_ACCOUNT_NUMBER, account.getNumber());
+        Assert.assertEquals(0, BigDecimal.valueOf(166).compareTo(account.getAmount()));
+    }
+
     private String produceCreatingBody(
             @NotNull String fromAccount, @NotNull String toAccount, @NotNull BigDecimal amount
     ) throws JsonProcessingException {
@@ -137,5 +178,16 @@ public class AmountTransferServiceTest extends BaseTest {
         request.setToAccount(toAccount);
         request.setAmount(amount);
         return mapper.writeValueAsString(request);
+    }
+
+    private Callable<MockHttpResponse> produceProcessThread(BigDecimal amount) {
+        return () -> {
+            MockHttpRequest request = MockHttpRequest.put(BASE_TRANSFER_PATH);
+            request.accept(MediaType.APPLICATION_JSON);
+            request.contentType(MediaType.APPLICATION_JSON_TYPE);
+            request.content(produceCreatingBody(EXISTED_ACCOUNT_NUMBER, EXISTED_SECOND_ACCOUNT_NUMBER, amount).getBytes());
+
+            return invoke(request, new MockHttpResponse());
+        };
     }
 }
